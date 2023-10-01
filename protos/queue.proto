@@ -1,0 +1,56 @@
+syntax="proto3";
+package queue;
+
+message Identifier {
+  string id = 1;
+}
+
+// Category represents a semantic grouping of related items.  These
+// are created and set by the user.
+message Category {
+  // The id of the category is a distinct, human-readable name
+  Identifier id = 1;
+}
+
+// Queue represents an ordered list of items to download.
+message Queue {
+  // A human-readable name for the queue.
+  string name = 2;
+  // items is a list of items to be downloaded. they are specified
+  // in the order in which they are to be downloaded, with the first
+  // item being the next item to be downloaded.
+  repeated Item items = 3;
+}
+
+// Target indicates a method and location of a file.  It can be used
+// to indicate where a file is coming from, or where it is going.
+message Target {
+  // url indicating the location and required information to read or write to the file
+  string url = 1;
+}
+
+// Item is a file to be downloaded
+message Item {
+  // source is where the file should be downloaded from
+  Target source = 1;
+  // destination is where the file should be written to
+  Target destination = 2;
+
+  // category indicates a user-specified group for the item.
+  Category category = 3;
+}
+
+message ItemState {
+  enum State {
+    ITEM_STATE_UNSPECIFIED = 0;
+    ITEM_STATE_QUEUED = 1;
+    ITEM_STATE_DOWNLOADING = 2;
+    ITEM_STATE_FAILED = 3;
+    ITEM_STATE_COMPLETE = 4;
+  }
+
+  State state = 2;
+  uint64 totalSizeBytes = 3;
+  uint64 downloadedBytes = 4;
+  string message = 5;
+}

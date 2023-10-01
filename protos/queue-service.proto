@@ -1,0 +1,149 @@
+syntax="proto3";
+package queue_svc;
+
+import "queue.proto";
+import "google/protobuf/timestamp.proto";
+
+service QueueService {
+    // CreateQueue constructs and stores a new queue with the specified parameters.
+    rpc CreateQueue(CreateQueueInput) returns (CreateQueueResult);
+    // EnqueueItem places the specified item at the end of the queue.
+    rpc EnqueueItem(EnqueueItemInput) returns (EnqueueItemResult);
+    // CancelItem dequeues the specified item.
+    rpc CancelItem(CancelItemInput) returns (CancelItemResult);
+    // GetQueueItems returns the ordered list of items to be downloaded.
+    rpc GetQueueItems(GetQueueItemsInput) returns (GetQueueItemsResult);
+    // GetFinishedItems returns the list of items that have been downloaded
+    rpc GetFinishedItems(GetFinishedItemsInput) returns (GetFinishedItemsResult);
+    // SetItemState updates the current state of the specified item.
+    rpc SetItemState(SetItemStateInput) returns (SetItemStateResult);
+    // ClaimItemState gets the next queued item and also sets its state to Claimed.
+    // The claimed state has a finite TTL, so the state should be set using SetItemState
+    // as soon as the caller starts working on the item.
+    rpc ClaimNextItem(ClaimNextItemInput) returns (ClaimNextItemResult);
+    // ClearHistory removes all finished items.  It does not affect the active queue.
+    rpc ClearHistory(ClearHistoryInput) returns (ClearHistoryResult);
+}
+
+message ClearHistoryInput {
+  // queue is the identifier of the queue whose history should be cleared
+  queue.Identifier queue = 1;
+}
+
+message ClearHistoryResult {
+
+}
+
+message GetFinishedItemsInput {
+  // queue is the identifier of the queue whose items should be returned
+  queue.Identifier queue = 1;
+  // pagination specifies parameters required for paginating results
+  PaginationParameters pagination = 2;
+}
+
+message GetFinishedItemsResult {
+  // pagination specifies the parameters that should be used in the next call to GetQueueItems
+  PaginationParameters pagination = 1;
+  // items is the download-ordered list of items in the queue. the first item is the first to be downloaded.
+  repeated IdentifiedQueueItemWithState items = 2;
+}
+
+message ClaimNextItemInput {
+  queue.Identifier queue = 1;
+}
+
+message ClaimNextItemResult {
+  queue.Identifier id = 1;
+  queue.Item item = 2;
+}
+
+// SetItemStateInput is the parameters passed into SetItemState
+message SetItemStateInput {
+  // item is the identifier of item whose state is to be updated
+  queue.Identifier item = 1;
+  // state is the new value of the state. Zero values and unspecified values
+  // are ignored.
+  queue.ItemState state = 2;
+}
+
+// SetItemStateResult is the result of the SetItemState call.
+message SetItemStateResult {
+  // pagination specifies the parameters that should be used in the next call to GetQueueItems
+  PaginationParameters pagination = 1;
+  // items is the download-ordered list of items in the queue. the first item is the first to be downloaded.
+  repeated IdentifiedQueueItemWithState items = 2;
+}
+
+// GetQueueItemsInput is the parameters passed into GetQueueItems
+message GetQueueItemsInput {
+  // queue is the identifier of the queue whose items should be returned
+  queue.Identifier queue = 1;
+  // pagination specifies parameters required for paginating results
+  PaginationParameters pagination = 2;
+}
+
+// GetQueueItemsResult is the response from GetQueueItems
+message GetQueueItemsResult {
+  // pagination specifies the parameters that should be used in the next call to GetQueueItems
+  PaginationParameters pagination = 1;
+  // items is the download-ordered list of items in the queue. the first item is the first to be downloaded.
+  repeated IdentifiedQueueItemWithState items = 2;
+}
+
+// CancelItemInput is the input to CancelItem
+message CancelItemInput {
+  // item is the identifier of the item to be cancelled
+  queue.Identifier item = 1;
+}
+
+// CancelItemResult is the response from CancelItem
+message CancelItemResult {
+
+}
+
+// IdentifiedQueueItemWithState is a pair of an IdentifiedQueueItem and the ItemState describing the current
+// progress being made on that item
+message IdentifiedQueueItemWithState {
+  // id is the identifier of the item whose state is being reported
+  queue.Identifier id = 1;
+  // item is the item whose state is being reported
+  queue.Item item = 2;
+  // state is the current download progress of the item
+  queue.ItemState state = 3;
+  // updated is the last time the state was updated
+  google.protobuf.Timestamp updated = 4;
+}
+
+// EnqueueItemInput is the input to EnqueueItem
+message EnqueueItemInput {
+  queue.Identifier queue = 1;
+  // item defines the item to be added to the download queue
+  queue.Item item = 2;
+}
+
+// EnqueueItemResult is the response from EnqueueItem
+message EnqueueItemResult {
+  // id is the identifier for the enqueued item
+  queue.Identifier id = 1;
+}
+
+// CreateQueueInput is the input to CreateQueue
+message CreateQueueInput {
+  // name is the human-readable name to give to the queue.
+  string name = 1;
+}
+
+// CreateQueueResult is the response from CreateQueue
+message CreateQueueResult {
+  // id is the identifier for the newly created queue
+  queue.Identifier id = 1;
+}
+
+// PaginationParameters defines how result lists should be truncated
+// such that a client can implement pagination.
+message PaginationParameters {
+  // limit is the maximum number of items to return
+  uint32 limit = 1;
+  // next is the id of the first result that should be returned
+  queue.Identifier next = 2;
+}

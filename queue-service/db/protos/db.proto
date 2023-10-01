@@ -1,0 +1,49 @@
+syntax="proto3";
+package db;
+
+option go_package = "github.com/harryrose/godm/queue-service/db";
+
+import "google/protobuf/timestamp.proto";
+
+message Queue {
+  string id = 1;
+  string name = 2;
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+message FinishedItem {
+  enum State {
+    ITEM_STATE_UNSPECIFIED = 0;
+    ITEM_STATE_SUCCESS = 1;
+    ITEM_STATE_FAILED = 2;
+    ITEM_STATE_CANCELLED = 3;
+  }
+  State state = 1;
+  uint64 totalSizeBytes = 3;
+  uint64 downloadedBytes = 4;
+  google.protobuf.Timestamp timestamp = 5;
+  string message = 6;
+  Item item = 7;
+}
+
+message Item {
+  string id = 1;
+
+  Target source = 2;
+  Target destination = 3;
+
+  Category category = 4;
+
+  google.protobuf.Timestamp claimExpiry = 5;
+
+  uint64 totalSizeBytes = 6;
+  uint64 downloadedBytes = 7;
+}
+
+message Category {
+  string id = 1;
+}
+
+message Target {
+  string url = 1;
+}
