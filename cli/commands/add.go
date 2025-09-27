@@ -1,19 +1,59 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"github.com/harryrose/godm/cli/queue"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	"net/url"
 	"os"
 )
 
-func Add(ctx *cli.Context) error {
-	if ctx.NArg() != 2 {
-		return cli.Exit("expected two arguments -- the url to fetch from and a path to store to", CodeInvalidArgument)
+const (
+	ArgSourceURL       = "source_url"
+	ArgDestinationPath = "destination_path"
+)
+
+func Add() *cli.Command {
+	return &cli.Command{
+		Name:   "add",
+		Usage:  "Queue an item for download",
+		Action: add,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        FlagQueue,
+				DefaultText: DefQueue,
+			},
+			&cli.StringFlag{
+				Name:        FlagCategory,
+				Aliases:     []string{"cat"},
+				DefaultText: DefCategory,
+			},
+		},
+		Arguments: []cli.Argument{
+			&cli.StringArg{
+				Name:      ArgSourceURL,
+				Value:     "",
+				UsageText: "The URL to download from",
+			},
+			&cli.StringArg{
+				Name:      ArgDestinationPath,
+				Value:     "",
+				UsageText: "The path to download the file to. Note that this is relative to the downloader's path.",
+			},
+		},
+		ArgsUsage: "<source_url> <destination_path>",
 	}
-	srcStr := ctx.Args().Get(0)
-	dstStr := ctx.Args().Get(1)
+}
+
+func add(ctx context.Context, cmd *cli.Command) error {
+
+	srcStr := cmd.StringArg(ArgSourceURL)
+	dstStr := cmd.StringArg(ArgDestinationPath)
+
+	if srcStr == "" || dstStr == "" {
+		return cli.Exit("source_url and destination_path are required", CodeInvalidArgument)
+	}
 
 	srcUrl, err := url.Parse(srcStr)
 	if err != nil {
@@ -33,16 +73,16 @@ func Add(ctx *cli.Context) error {
 		return cli.Exit("only file:// destination urls are supported", CodeInvalidArgument)
 	}
 
-	client, err := getRPCClient(ctx)
+	client, err := getRPCClient(cmd)
 	if err != nil {
 		return err
 	}
-	_, err = client.EnqueueItem(ctx.Context, &queue.EnqueueItemInput{
-		Queue: &queue.Identifier{Id: StringOrDefault(ctx, ArgQueue, DefQueue)},
+	_, err = client.EnqueueItem(ctx, &queue.EnqueueItemInput{
+		Queue: &queue.Identifier{Id: cmd.String(FlagQueue)},
 		Item: &queue.Item{
 			Source:      &queue.Target{Url: srcUrl.String()},
 			Destination: &queue.Target{Url: dstUrl.String()},
-			Category:    &queue.Category{Id: &queue.Identifier{Id: StringOrDefault(ctx, ArgCategory, DefCategory)}},
+			Category:    &queue.Category{Id: &queue.Identifier{Id: cmd.String(FlagCategory)}},
 		},
 	})
 	if err != nil {

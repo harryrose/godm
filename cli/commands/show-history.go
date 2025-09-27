@@ -1,15 +1,30 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"github.com/harryrose/godm/cli/queue"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	"os"
 	"text/tabwriter"
 )
 
-func ShowHistory(ctx *cli.Context) error {
-	client, err := getRPCClient(ctx)
+func ShowHistory() *cli.Command {
+	return &cli.Command{
+		Name:   "history",
+		Usage:  "Show a queue's finished items and their status",
+		Action: showHistory,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  FlagQueue,
+				Value: DefQueue,
+			},
+		},
+	}
+}
+
+func showHistory(ctx context.Context, cmd *cli.Command) error {
+	client, err := getRPCClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -18,9 +33,9 @@ func ShowHistory(ctx *cli.Context) error {
 	fmt.Fprintf(w, "Source\tDestination\tState\tSize\tMessage")
 	next := ""
 	for {
-		got, err := client.GetFinishedItems(ctx.Context, &queue.GetFinishedItemsInput{
+		got, err := client.GetFinishedItems(ctx, &queue.GetFinishedItemsInput{
 			Queue: &queue.Identifier{
-				Id: StringOrDefault(ctx, ArgQueue, DefQueue),
+				Id: cmd.String(FlagQueue),
 			},
 			Pagination: &queue.PaginationParameters{
 				Limit: 50,

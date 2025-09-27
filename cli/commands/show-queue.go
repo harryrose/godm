@@ -1,15 +1,30 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"github.com/harryrose/godm/cli/queue"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	"os"
 	"text/tabwriter"
 )
 
-func ShowQueue(ctx *cli.Context) error {
-	client, err := getRPCClient(ctx)
+func ShowQueue() *cli.Command {
+	return &cli.Command{
+		Name:   "queue",
+		Usage:  "Show a queue's items and their status",
+		Action: showQueue,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  FlagQueue,
+				Value: DefQueue,
+			},
+		},
+	}
+}
+
+func showQueue(ctx context.Context, cmd *cli.Command) error {
+	client, err := getRPCClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -18,9 +33,9 @@ func ShowQueue(ctx *cli.Context) error {
 	fmt.Fprintf(w, "Source\tDestination\tDownloaded\tTotal\t%%")
 	next := ""
 	for {
-		got, err := client.GetQueueItems(ctx.Context, &queue.GetQueueItemsInput{
+		got, err := client.GetQueueItems(ctx, &queue.GetQueueItemsInput{
 			Queue: &queue.Identifier{
-				Id: StringOrDefault(ctx, ArgQueue, DefQueue),
+				Id: cmd.String(FlagQueue),
 			},
 			Pagination: &queue.PaginationParameters{
 				Limit: 50,

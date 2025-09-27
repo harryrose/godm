@@ -4,13 +4,17 @@ import (
 	"context"
 	"fmt"
 	"github.com/harryrose/godm/cli/queue"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 )
 
-func getRPCClient(cliCtx *cli.Context) (queue.QueueServiceClient, error) {
+type Stringer interface {
+	String(key string) string
+}
+
+func getRPCClient(cliCtx Stringer) (queue.QueueServiceClient, error) {
 	con, err := grpc.Dial(
 		cliCtx.String(ArgQueueHost),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
