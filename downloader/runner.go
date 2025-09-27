@@ -6,8 +6,9 @@ import (
 	"github.com/harryrose/godm/downloader/queue"
 	"github.com/harryrose/godm/downloader/reader"
 	"github.com/harryrose/godm/downloader/writer"
+	"github.com/harryrose/godm/log"
+	"github.com/harryrose/godm/log/keys"
 	"io"
-	"log"
 	"sync/atomic"
 	"time"
 )
@@ -19,17 +20,18 @@ const (
 func Run(ctx context.Context, client queue.QueueServiceClient, pollPeriod time.Duration, queueName string, rateLimitBytesPerSecond int) {
 	ticker := time.Tick(pollPeriod)
 	for range ticker {
+		log.Infow("polling for next item", "queue", queueName)
 		claimed, err := client.ClaimNextItem(ctx, &queue.ClaimNextItemInput{
 			Queue: &queue.Identifier{
 				Id: queueName,
 			},
 		})
-
 		if err != nil {
-
+			log.Warnw("failed to claim next item", "queue", queueName, keys.Error, err)
 			continue
 		}
 		if claimed.Id == nil {
+			log.Infow("no items to claim", "queue", queueName)
 			continue
 		}
 
@@ -39,7 +41,7 @@ func Run(ctx context.Context, client queue.QueueServiceClient, pollPeriod time.D
 
 		bytesWritten, totalSizeBytes, err := handleItem(ctx, client, id, src, dst, rateLimitBytesPerSecond)
 		if err != nil {
-			log.Printf("download failed: %v\n", err)
+			log.Warnw("download failed", keys.Error, err)
 			_, err := client.SetItemState(ctx, &queue.SetItemStateInput{
 				Item: &queue.Identifier{Id: id},
 				State: &queue.ItemState{
@@ -50,7 +52,7 @@ func Run(ctx context.Context, client queue.QueueServiceClient, pollPeriod time.D
 				},
 			})
 			if err != nil {
-				log.Printf("error setting item state to failed: %v", err)
+				log.Warnw("error setting item state to failed", keys.Error, err)
 			}
 		} else {
 			_, err := client.SetItemState(ctx, &queue.SetItemStateInput{
@@ -62,7 +64,7 @@ func Run(ctx context.Context, client queue.QueueServiceClient, pollPeriod time.D
 				},
 			})
 			if err != nil {
-				log.Printf("error setting item state to complete: %v", err)
+				log.Warnw("error setting item state to complete", keys.Error, err)
 			}
 		}
 	}
@@ -104,7 +106,7 @@ func handleItem(ctx context.Context, client queue.QueueServiceClient, id, src, d
 
 			case <-tick:
 				bytesWritten := cw.BytesWritten()
-				log.Printf("downloading item %v -- %v of %v bytes\n", id, bytesWritten, totalSizeBytes)
+				log.Infow("downloading item", "item_id", id, "bytes_written", bytesWritten, "total_bytes", totalSizeBytes)
 				_, err := client.SetItemState(ctx, &queue.SetItemStateInput{
 					Item: &queue.Identifier{Id: id},
 					State: &queue.ItemState{
@@ -115,7 +117,7 @@ func handleItem(ctx context.Context, client queue.QueueServiceClient, id, src, d
 					},
 				})
 				if err != nil {
-					log.Printf("error updating state for item %v: %v\n", id, err)
+					log.Warnw("error updating state for item", "item_id", id, keys.Error, err)
 				}
 			}
 		}
