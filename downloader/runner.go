@@ -55,6 +55,7 @@ func Run(ctx context.Context, client queue.QueueServiceClient, pollPeriod time.D
 				log.Warnw("error setting item state to failed", keys.Error, err)
 			}
 		} else {
+			log.Infow("download complete", "item_id", id, "bytes_written", bytesWritten, "total_bytes", totalSizeBytes)
 			_, err := client.SetItemState(ctx, &queue.SetItemStateInput{
 				Item: &queue.Identifier{Id: id},
 				State: &queue.ItemState{
@@ -71,6 +72,8 @@ func Run(ctx context.Context, client queue.QueueServiceClient, pollPeriod time.D
 }
 
 func handleItem(ctx context.Context, client queue.QueueServiceClient, id, src, dst string, rateLimitBytesPerSecond int) (int64, int64, error) {
+	log.Infow("starting download of item", "item_id", id, "src", src, "dst", dst, "rate_limit_bytes_per_second", rateLimitBytesPerSecond)
+
 	rdr, err := reader.BuildFromURL(src)
 	if err != nil {
 		return 0, 0, fmt.Errorf("error constructing downloader for url %v: %w", src, err)
