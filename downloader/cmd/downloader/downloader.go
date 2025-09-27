@@ -128,16 +128,16 @@ func main() {
 
 			writer.ForceDownloadRoot(downloadDir)
 
-			queueAddress := command.String(EnvQueueAddress)
+			queueAddress := command.String(FlagQueueAddress)
 			if queueAddress == "" {
 				return fmt.Errorf("queue address cannot be empty")
 			}
-			key := command.String(EnvKey)
+			key := command.String(FlagKey)
 			if key == "" {
 				return fmt.Errorf("key cannot be empty")
 			}
 
-			pollPeriod := command.Duration(EnvPollPeriod)
+			pollPeriod := command.Duration(FlagPollPeriod)
 			if pollPeriod <= time.Second {
 				return fmt.Errorf("poll period must be greater than 1 second")
 			}
@@ -147,7 +147,7 @@ func main() {
 				return fmt.Errorf("queue cannot be empty")
 			}
 
-			rateLimit, ok := command.Value(EnvRateLimit).(size.Size)
+			rateLimit, ok := command.Value(FlagRateLimit).(size.Size)
 			if !ok {
 				return fmt.Errorf("rate limit was not a valid size")
 			}
