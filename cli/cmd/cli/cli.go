@@ -38,6 +38,7 @@ func main() {
 				Commands: []*cli.Command{
 					commands.ShowQueue(),
 					commands.ShowHistory(),
+					commands.ShowQueues(),
 				},
 			},
 		},

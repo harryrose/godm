@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	db2 "github.com/harryrose/godm/queue-service/db"
+	"github.com/harryrose/godm/queue-service/functional"
 	"github.com/harryrose/godm/queue-service/queue"
 	"github.com/harryrose/godm/queue-service/rpc"
 	"google.golang.org/grpc/codes"
@@ -48,6 +49,18 @@ func (s *Service) CreateQueue(ctx context.Context, in *rpc.CreateQueueInput) (*r
 	}
 
 	return &rpc.CreateQueueResult{}, nil
+}
+
+func (s *Service) ListQueues(ctx context.Context, in *rpc.ListQueuesInput) (*rpc.ListQueuesResult, error) {
+	qs, err := s.DB.ListQueues()
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	out := &rpc.ListQueuesResult{}
+	out.Queues = functional.Map(qs, func(q string) *rpc.ListQueueResultItem {
+		return &rpc.ListQueueResultItem{Name: q}
+	})
+	return out, nil
 }
 
 func (s *Service) EnqueueItem(ctx context.Context, in *rpc.EnqueueItemInput) (*rpc.EnqueueItemResult, error) {

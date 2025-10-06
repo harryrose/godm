@@ -7,6 +7,8 @@ import "google/protobuf/timestamp.proto";
 service QueueService {
     // CreateQueue constructs and stores a new queue with the specified parameters.
     rpc CreateQueue(CreateQueueInput) returns (CreateQueueResult);
+    // ListQueues returns the list of all known queues.
+    rpc ListQueues(ListQueuesInput) returns (ListQueuesResult);
     // EnqueueItem places the specified item at the end of the queue.
     rpc EnqueueItem(EnqueueItemInput) returns (EnqueueItemResult);
     // CancelItem dequeues the specified item.
@@ -23,6 +25,20 @@ service QueueService {
     rpc ClaimNextItem(ClaimNextItemInput) returns (ClaimNextItemResult);
     // ClearHistory removes all finished items.  It does not affect the active queue.
     rpc ClearHistory(ClearHistoryInput) returns (ClearHistoryResult);
+}
+
+message ListQueuesInput {
+
+}
+
+message ListQueueResultItem {
+  // name is the name of the queue
+  string name = 1;
+}
+
+message ListQueuesResult {
+  // queues is the list of queues known to the system
+  repeated ListQueueResultItem queues = 1;
 }
 
 message ClearHistoryInput {

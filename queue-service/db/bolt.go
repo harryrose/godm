@@ -110,6 +110,21 @@ func (b *Bolt) CreateQueue(name string) (*Queue, error) {
 	return &out, err
 }
 
+func (b *Bolt) ListQueues() ([]string, error) {
+	var out []string
+	err := b.db.View(func(tx *bolt.Tx) error {
+		queues, err := ensureBucket(tx, QueueBucket)
+		if err != nil {
+			return fmt.Errorf("error listing queues: %w", err)
+		}
+		return queues.ForEachBucket(func(name []byte) error {
+			out = append(out, string(name))
+			return nil
+		})
+	})
+	return out, err
+}
+
 func (b *Bolt) EnqueueItem(queue, source, destination, category string) (string, error) {
 	var out string
 	err := b.db.Update(func(tx *bolt.Tx) error {

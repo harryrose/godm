@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli/v3"
 	"net/url"
 	"os"
+	"path"
 )
 
 const (
@@ -16,18 +17,21 @@ const (
 
 func Add() *cli.Command {
 	return &cli.Command{
-		Name:   "add",
-		Usage:  "Queue an item for download",
-		Action: add,
+		Name:      "add",
+		Usage:     "Queue an item for download",
+		ArgsUsage: "<source_url> [destination_path]",
+		Action:    add,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        FlagQueue,
 				DefaultText: DefQueue,
+				Value:       DefQueue,
 			},
 			&cli.StringFlag{
 				Name:        FlagCategory,
 				Aliases:     []string{"cat"},
 				DefaultText: DefCategory,
+				Value:       DefCategory,
 			},
 		},
 		Arguments: []cli.Argument{
@@ -42,7 +46,6 @@ func Add() *cli.Command {
 				UsageText: "The path to download the file to. Note that this is relative to the downloader's path.",
 			},
 		},
-		ArgsUsage: "<source_url> <destination_path>",
 	}
 }
 
@@ -51,7 +54,7 @@ func add(ctx context.Context, cmd *cli.Command) error {
 	srcStr := cmd.StringArg(ArgSourceURL)
 	dstStr := cmd.StringArg(ArgDestinationPath)
 
-	if srcStr == "" || dstStr == "" {
+	if srcStr == "" {
 		return cli.Exit("source_url and destination_path are required", CodeInvalidArgument)
 	}
 
@@ -61,6 +64,13 @@ func add(ctx context.Context, cmd *cli.Command) error {
 	}
 	if len(srcUrl.Scheme) == 0 {
 		return cli.Exit(fmt.Sprintf("source url is missing a scheme: %v", err), CodeInvalidArgument)
+	}
+
+	if dstStr == "" {
+		dstStr = path.Base(srcUrl.Path)
+	}
+	if dstStr == "" {
+		return cli.Exit("destination_path could not be determined from the source_url, please provide one", CodeInvalidArgument)
 	}
 
 	dstUrl, err := url.Parse(dstStr)
